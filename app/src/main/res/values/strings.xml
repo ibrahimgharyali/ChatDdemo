@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">ChatDdemo</string>
+    <string name="img_des_same">Background</string>
+    <string name="text_comment">Comment</string>
+    <string name="text_time_value">time</string>
+    <string name="add_a_comment">Write something</string>
+</resources>
