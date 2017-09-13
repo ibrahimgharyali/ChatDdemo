@@ -4,9 +4,12 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.view.TouchDelegate;
 import android.view.View;
 import android.widget.EditText;
@@ -16,6 +19,7 @@ import android.widget.RelativeLayout;
 
 import com.example.ibrahim.chatddemo.R;
 import com.example.ibrahim.chatddemo.dataproviders.greendao.ChatMessage;
+import com.example.ibrahim.chatddemo.gui.TypefaceSpan;
 import com.example.ibrahim.chatddemo.utils.ChatHelper;
 import com.example.ibrahim.chatddemo.viewHolder.ChatConversationScreenAdapter;
 
@@ -39,6 +43,15 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
         getWindow().setBackgroundDrawableResource(R.drawable.chat_background);
+
+        /* Changing font of actionbar title */
+        SpannableString s = new SpannableString("Support Center");
+        s.setSpan(new TypefaceSpan(this, "LobsterRegular.ttf"), 0, s.length(),
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        // Update the action bar title with the TypefaceSpan instance
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null)
+            actionBar.setTitle(s);
 
         // initialize chat helper
         initChatHelper();
@@ -148,7 +161,7 @@ public class ChatActivity extends AppCompatActivity {
 
     /** Create an automated message, save it in db */
     private void sendReplyToUser() {
-        ChatMessage chatMessage = chatHelper.saveChatMessageToDB(ChatHelper.USER_BOT, System.currentTimeMillis()+"");
+        ChatMessage chatMessage = chatHelper.saveChatMessageToDB(ChatHelper.USER_BOT, "Sure Sir: "+System.currentTimeMillis());
         addToAdapterAndShowInList(chatMessage);
     }
 
