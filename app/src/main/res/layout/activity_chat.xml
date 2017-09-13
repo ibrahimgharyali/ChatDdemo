@@ -62,10 +62,42 @@
                 android:id="@+id/comments_list"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_weight="1"
                 app:stackFromEnd="true"
                 app:reverseLayout="true"
 
                 />
+            <RelativeLayout
+                android:id="@id/typing_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/ic_round_10dp_white_rect"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:layout_margin="5dp"
+                android:visibility="gone"
+                >
+
+                <com.eyalbira.loadingdots.LoadingDots
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+
+                    app:LoadingDots_auto_play="true"
+
+                    app:LoadingDots_dots_color="@color/colorPrimaryDark"
+                    app:LoadingDots_dots_count="4"
+                    app:LoadingDots_dots_size="6dp"
+                    app:LoadingDots_dots_space="4dp"
+
+                    app:LoadingDots_loop_duration="800"
+                    app:LoadingDots_loop_start_delay="100"
+
+                    app:LoadingDots_jump_duration="200"
+                    app:LoadingDots_jump_height="8dp"/>
+            </RelativeLayout>
+
         </LinearLayout>
         <View
             android:layout_width="match_parent"

@@ -9,4 +9,5 @@
     <item name="user_name" type="id" />
     <item name="comment_text" type="id" />
     <item name="send_comment" type="id" />
+    <item name="typing_text" type="id" />
 </resources>

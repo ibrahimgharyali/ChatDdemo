@@ -1,40 +1,23 @@
 package com.example.ibrahim.chatddemo.activities;
 
-import android.app.Activity;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.design.widget.BottomSheetBehavior;
-import android.support.design.widget.BottomSheetDialog;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.ActionBar;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.view.MenuItem;
 import android.view.TouchDelegate;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ListView;
 import android.widget.ProgressBar;
-
+import android.widget.RelativeLayout;
 
 import com.example.ibrahim.chatddemo.R;
 import com.example.ibrahim.chatddemo.dataproviders.greendao.ChatMessage;
-import com.example.ibrahim.chatddemo.listeners.EndlessRecyclerViewScrollListener;
-import com.example.ibrahim.chatddemo.models.BaseModel;
 import com.example.ibrahim.chatddemo.utils.ChatHelper;
-import com.example.ibrahim.chatddemo.utils.DebugUtils;
-import com.example.ibrahim.chatddemo.utils.NetworkUtils;
-import com.example.ibrahim.chatddemo.utils.ShowUtils;
 import com.example.ibrahim.chatddemo.viewHolder.ChatConversationScreenAdapter;
-
 
 import java.util.ArrayList;
 import java.util.Timer;
@@ -42,26 +25,14 @@ import java.util.TimerTask;
 
 public class ChatActivity extends AppCompatActivity {
 
-    @NonNull
-    public static final String CHAT_USER_KEY = "user_data";
-    public static final int FROM_CONVERSATION_LIST_ADAPTER=1;
-    public static final int FROM_CHAT_USER_SEARCH_ADAPTER =2;
-    public static final int FROM_CHAT_GROUP_USER_SEARCH_ADAPTER =3;
-    public String groupIdFromLocalDB;
     private EditText addComments;
     private RecyclerView chatRecyclerView;
     private ArrayList<ChatMessage> chatModelsList;
     private ChatConversationScreenAdapter userChatAdapter;
     private ImageButton  sendButton;
-    private boolean getMore = false;
     private ProgressBar progressBar;
-    //
-    private BottomSheetBehavior mBottomSheetBehavior;
-    @Nullable
-    private BottomSheetDialog mBottomSheetDialog;
-//    private SwipeRefreshLayout refreshLayout;
-    private LinearLayoutManager mLayoutManager;
     private ChatHelper chatHelper;
+    private RelativeLayout typingTV;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,22 +40,16 @@ public class ChatActivity extends AppCompatActivity {
         setContentView(R.layout.activity_chat);
         getWindow().setBackgroundDrawableResource(R.drawable.chat_background);
 
-
         // initialize chat helper
         initChatHelper();
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.drawable.ic_close_white);
-        }
         addComments = (EditText) findViewById(R.id.add_comment);
         sendButton = (ImageButton) findViewById(R.id.send_comment);
+        typingTV = (RelativeLayout) findViewById(R.id.typing_text);
         chatRecyclerView = (RecyclerView) findViewById(R.id.comments_list);
 
         progressBar = (ProgressBar) findViewById(R.id.progress_bar);
         progressBar.setIndeterminate(true);
-
-        mLayoutManager = new LinearLayoutManager(this);
+        LinearLayoutManager mLayoutManager = new LinearLayoutManager(this);
         mLayoutManager.setReverseLayout(true);
         mLayoutManager.setStackFromEnd(true);
 
@@ -92,8 +57,7 @@ public class ChatActivity extends AppCompatActivity {
         chatRecyclerView.setNestedScrollingEnabled(false);
 
         chatModelsList = new ArrayList<>();
-        userChatAdapter = new ChatConversationScreenAdapter(chatModelsList,1, this);
-        chatRecyclerView.setAdapter(userChatAdapter);
+//        YoYo.with(Techniques.RollIn).duration(800).repeat(6).playOn(typingTV);
 
         final View parent = (View) sendButton.getParent();  // button: the view you want to enlarge hit area
         parent.post( new Runnable() {
@@ -131,23 +95,22 @@ public class ChatActivity extends AppCompatActivity {
         if (!firstTime)
             progressBar.setVisibility(View.VISIBLE);
         // now get chat list from chat message table via local db
-        /* List size will be one at first because latest message will be at */
-//        getPreviousMessages();
+        getPreviousMessages();
+    }
+
+    private void getPreviousMessages() {
+        //Fetching data from DB
+        chatModelsList = chatHelper.readChatMessageListFromDB();
+        //Creating and setting Adapter
+        userChatAdapter = new ChatConversationScreenAdapter(chatModelsList);
+        chatRecyclerView.setAdapter(userChatAdapter);
     }
 
 
     private void initChatHelper(){
         if (chatHelper == null) {
             chatHelper = new ChatHelper(this);
-
         }
-    }
-
-    private void initChatHelperGroupId() {
-        if (chatHelper == null)
-            initChatHelper();
-        if (groupIdFromLocalDB != null)
-            chatHelper.setGroupIdFromLocalDB(groupIdFromLocalDB);
     }
     
     private void enableSend() {
@@ -156,25 +119,41 @@ public class ChatActivity extends AppCompatActivity {
             public void onClick(View view) {
                 final String enteredText = addComments.getText().toString().trim();
                 if (enteredText.length() > 0){
-
-                        addComments.setText("");
-//                        hideKeyboard(ChatActivity.this);
-                        ChatMessage chatMessage = null;
-
-                        // save msg in local DB
-                        chatMessage = chatHelper.saveNewSendingMessageToDB(1,  enteredText);
-
-                        if (chatMessage!=null){
-                            chatModelsList.add(0, chatMessage);
-
+                    addComments.setText("");
+                    // save msg in local DB
+                    ChatMessage chatMessage = chatHelper.saveNewSendingMessageToDB(enteredText);
+                    showTyping(true);
+                    addToAdapterAndShowInList(chatMessage);
+                    //now show loading for 2 seconds and show a automated message
+                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            showTyping(false);
+                            sendReplyToUser();
                         }
-                        userChatAdapter.notifyItemInserted(0);
-                        scrollToBottom();
-
+                    }, 2000);
                 }
             }
 
         });
+    }
+
+    private void addToAdapterAndShowInList(ChatMessage chatMessage) {
+        if (chatMessage!=null){
+            chatModelsList.add(0, chatMessage);
+        }
+        userChatAdapter.notifyItemInserted(0);
+        scrollToBottom();
+    }
+
+    /** Create an automated message, save it in db */
+    private void sendReplyToUser() {
+        ChatMessage chatMessage = chatHelper.saveChatMessageToDB(ChatHelper.USER_BOT, System.currentTimeMillis()+"");
+        addToAdapterAndShowInList(chatMessage);
+    }
+
+    private void showTyping(boolean b) {
+        typingTV.setVisibility(b ? View.VISIBLE : View.GONE);
     }
 
     private void scrollToBottom() {
@@ -187,32 +166,12 @@ public class ChatActivity extends AppCompatActivity {
         }, 500);
     }
 
-
-
-    private void disableSend() {
+    /*private void disableSend() {
         sendButton.getDrawable().setColorFilter(ContextCompat.getColor(this, R.color.comment_off), PorterDuff.Mode.SRC_ATOP);
         sendButton.setOnClickListener(null);
-    }
-
-    // Long press Comment Options
+    }*/
 
 
-
-
-    private void hideCommentsOptionMenu() {
-        if (mBottomSheetBehavior != null && mBottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED)
-            mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                onBackPressed();
-                return false;
-        }
-        return super.onOptionsItemSelected(item);
-    }
 
 
 }
